@@ -1,0 +1,4 @@
+*.las
+*.idea
+*.json
+__pycache__

@@ -2,10 +2,9 @@ from laspy.file import File
 import numpy as np
 import scipy.io as sio
 
-from pyproj import Proj, transform
-from shapely.geometry import LineString, MultiLineString, Point
+from pyproj import CRS, Transformer
+from shapely.geometry import LineString
 
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import overpass
 
@@ -22,23 +21,29 @@ def copy_decimated_writable(las, decimate_step=10):
 
 
 # Converting to WGS84
-def get_wgs84_sector(las, proj='epsg:32733'):
-    in_proj = Proj(init=proj)
-    out_proj = Proj(init='epsg:4326')
-    lon, lat = transform(in_proj, out_proj, las.x, las.y)
-    sector = (np.min(lat), np.min(lon), np.max(lat),np.max(lon))
+def get_wgs84_sector(las, epsg_num=32733):
+
+    crs_in = CRS.from_epsg(epsg_num)
+    crs_4326 = CRS.from_epsg(4326)
+    transformer = Transformer.from_crs(crs_from=crs_in, crs_to=crs_4326)
+
+    lat, lon = transformer.transform(las.x, las.y)
+
+    sector = (np.min(lat), np.min(lon), np.max(lat), np.max(lon))
     return sector
 
 
-def convert_multilines(multilines, from_proj='epsg:4326', to_proj='epsg:32733'):
-    to_proj = Proj(init=to_proj)
-    from_proj = Proj(init=from_proj)
+def convert_multilines(multilines, epsg_to=32733):
+
+    crs_from = CRS.from_epsg(4326)
+    crs_to = CRS.from_epsg(epsg_to)
+    transformer = Transformer.from_crs(crs_from=crs_from, crs_to=crs_to)
 
     linestrings = []
     for pl in multilines:
         lon = [c[0] for c in pl.coords]
         lat = [c[1] for c in pl.coords]
-        x, y = transform(from_proj, to_proj, lon, lat)
+        x, y = transformer.transform(lat, lon)
         linestrings.append(LineString(zip(x, y)))
 
     return linestrings
@@ -49,29 +54,6 @@ def show_las(xs,ys,zs,c=None):
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(xs, ys, zs, c=c, marker='.')
     plt.show()
-
-
-# def get_near_points(las, line, width):
-#     x = las.x
-#     y = las.y
-#     r = width / 2
-#
-#     min_x = np.min(line.coords[0]) - r
-#     min_y = np.min(line.coords[1]) - r
-#     max_x = np.max(line.coords[0]) + r
-#     max_y = np.max(line.coords[1]) + r
-#
-#     candidates = np.where((x >= min_x) & (x <= max_x) & (y >= min_y) & (y <= max_y))
-#
-#     if len(candidates[0]) == 0:
-#         return
-#
-#     x = x[candidates]
-#     y = y[candidates]
-#
-#     points = [Point(px,py) for px,py in zip(x,y)]
-#
-#     print(len(points))
 
 
 def get_near_points(las, segment_start, segment_end, segment_width):
@@ -137,47 +119,43 @@ def show_linestrings(linestrings):
     plt.show()
 
 
-# Reading LAS
-# filepath = "01_20190430_083945_1.las"
-# filepath = "04_20190430_093008_0.las"
-filepath = "293S_20190521_074137_4.las"
-# las_proj = 'epsg:32733'  # Angola
-las_proj = 'epsg:25830'  # Europe
-las_data_read = File(filepath, mode='r')
-las_data = copy_decimated_writable(las_data_read, decimate_step=10)
+if __name__ == "__main__":
 
-sector = get_wgs84_sector(las_data, proj=las_proj)
-print("Sector: ", end="")
-print(sector)
-# sector = (-9.09333395170717, 13.28352294034062, -9.08682383512845, 13.306427631531223)
-print(sector)
+    # filepath = "01_20190430_083945_1.las"
+    # filepath = "04_20190430_093008_0.las"
+    filepath = "293S_20190521_074137_4.las"
+    # las_proj = 'epsg:32733'  # Angola
+    las_proj = 25830  # Europe
+    decimation = 10  # Take 1 every 10 points
 
-cache = overpass.ObjectCache()
-query_roads = overpass.get_highway_query(sector)
-linestrings, tags, widths = overpass.get_linestrings(query_roads, cache)
+    # Reading LAS
+    print("Processing %s" % filepath)
+    las_data_read = File(filepath, mode='r')
+    las_data = copy_decimated_writable(las_data_read, decimate_step=decimation)
 
+    # Getting Sector
+    sector = get_wgs84_sector(las_data, epsg_num=las_proj)
+    print("Sector: ", end="")
+    print(sector)
+    # sector = (-9.09333395170717, 13.28352294034062, -9.08682383512845, 13.306427631531223)
 
-linestrings = convert_multilines(linestrings, from_proj='epsg:4326', to_proj=las_proj)
-show_linestrings(linestrings)
+    cache = overpass.ObjectCache()
+    query_roads = overpass.get_highway_query(sector)
+    road_linestrings, road_tags, road_widths = overpass.get_linestrings(query_roads, cache)
 
-road_mask = get_road_mask(linestrings, widths)
-sio.savemat('roads_decimated.mat', {'mask': road_mask})
+    road_linestrings = convert_multilines(road_linestrings, epsg_to=las_proj)
+    show_linestrings(road_linestrings)
 
-road_mask = road_mask.astype(np.uint8)
+    road_mask = get_road_mask(road_linestrings, road_widths)
 
-# mask = sio.loadmat('roads.mat')['mask']
+    road_mask = road_mask.astype(np.uint8)
 
-# nth = 2000
-# m = road_mask[1::nth][0]
-# show_las(las_data.x[1::nth],las_data.y[1::nth],las_data.z[1::nth], c=m)
+    # sio.savemat('roads_decimated.mat', {'mask': road_mask})
+    # mask = sio.loadmat('roads.mat')['mask']
+    
+    las_data.classification = road_mask
 
-# las_out = File("01_20190430_083945_1_roads.las", mode='w', header=las_data.header)
-# las_out.x = las_data.x
-# las_out.y = las_data.y
-# las_out.z = las_data.z
-las_data.classification = road_mask
-
-print("done")
+    print("Point Classification Finished")
 
 
 

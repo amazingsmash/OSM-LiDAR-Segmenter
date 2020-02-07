@@ -118,12 +118,17 @@ def show_linestrings(linestrings):
 
     plt.show()
 
+def get_map_url(sector):
+    map_url = "http://layered.wms.geofabrik.de/std/demo_key?LAYERS=world%2Cbuildings%2Cpower%2Clanduse%2Cwater%2Cadmin%2Croads%2Cpoi%2Cplacenames&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&STYLES=&FORMAT=image%2Fjpeg&SRS=EPSG%3A4326&BBOX={BBOX}&WIDTH=256&HEIGHT=256"
+    return map_url.replace("{BBOX}", "%f,%f,%f,%f" % (sector[1], sector[0], sector[3], sector[2]))
+
 
 if __name__ == "__main__":
 
     # filepath = "01_20190430_083945_1.las"
     # filepath = "04_20190430_093008_0.las"
-    filepath = "293S_20190521_074137_4.las"
+    # filepath = "293S_20190521_074137_4.las"
+    filepath = "294S_20190521_143953_6_EPSG_25830.las"
     # las_proj = 'epsg:32733'  # Angola
     las_proj = 25830  # Europe
     decimation = 10  # Take 1 every 10 points
@@ -137,6 +142,7 @@ if __name__ == "__main__":
     sector = get_wgs84_sector(las_data, epsg_num=las_proj)
     print("Sector: ", end="")
     print(sector)
+    print(get_map_url(sector))
     # sector = (-9.09333395170717, 13.28352294034062, -9.08682383512845, 13.306427631531223)
 
     cache = overpass.ObjectCache()
@@ -152,7 +158,7 @@ if __name__ == "__main__":
 
     # sio.savemat('roads_decimated.mat', {'mask': road_mask})
     # mask = sio.loadmat('roads.mat')['mask']
-    
+
     las_data.classification = road_mask
 
     print("Point Classification Finished")

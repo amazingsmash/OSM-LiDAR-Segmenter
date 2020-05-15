@@ -6,7 +6,7 @@ from pyproj import CRS, Transformer
 from shapely.geometry import LineString
 
 import matplotlib.pyplot as plt
-import overpass
+import overpass_roads
 
 
 def copy_decimated_writable(las, decimate_step=10):
@@ -145,9 +145,9 @@ if __name__ == "__main__":
     print(get_map_url(sector))
     # sector = (-9.09333395170717, 13.28352294034062, -9.08682383512845, 13.306427631531223)
 
-    cache = overpass.ObjectCache()
-    query_roads = overpass.get_highway_query(sector)
-    road_linestrings, road_tags, road_widths = overpass.get_linestrings(query_roads, cache)
+    cache = overpass_roads.ObjectCache()
+    query_roads = overpass_roads.get_highway_query(sector)
+    road_linestrings, road_tags, road_widths = overpass_roads.get_linestrings(query_roads, cache)
 
     road_linestrings = convert_multilines(road_linestrings, epsg_to=las_proj)
     show_linestrings(road_linestrings)

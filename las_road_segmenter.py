@@ -214,6 +214,33 @@ def get_map_url(sector):
 #
 #     return road_mask
 
+def get_floor_mask(xyzc, threshold=0.5):
+    minx = np.min(xyzc[:, 0])
+    maxx = np.max(xyzc[:, 0])
+    miny = np.min(xyzc[:, 1])
+    maxy = np.max(xyzc[:, 1])
+
+    ix = (xyzc[:, 0] - minx) / (maxx - minx)
+    iy = (xyzc[:, 1] - miny) / (maxy - miny)
+
+    map_res = (100, 100)
+    ix = np.floor(ix * map_res[0])
+    iy = np.floor(iy * map_res[1])
+    indices = np.ravel_multi_index([ix, iy], map_res)
+    unique_indices = np.unique(indices)
+
+    hs = np.array(indices.shape)
+    for u in unique_indices:
+        ps = indices == u
+        hs[ps] = np.min(xyzc[ps, 2])
+
+    hs = hs + threshold
+    floor_points = xyzc[:, 3] > hs
+    return floor_points
+
+
+
+
 def get_road_points(xyzc, epsg, cache=None):
     # Getting Sector
     sector = get_wgs84_sector(xyzc, epsg_num=las_proj)
@@ -234,9 +261,9 @@ def get_road_points(xyzc, epsg, cache=None):
 def save_las(xyzc, header, path):
     # header = Header()
     outfile = File(path, mode="w", header=header)
-    outfile.X = xyzc[:,0]
-    outfile.Y = xyzc[:,1]
-    outfile.Z = xyzc[:,2]
+    outfile.X = xyzc[:, 0]
+    outfile.Y = xyzc[:, 1]
+    outfile.Z = xyzc[:, 2]
     outfile.Classification = xyzc[:, 3].astype(np.uint8)
     outfile.close()
 
@@ -257,7 +284,7 @@ if __name__ == "__main__":
 
     filepath = sys.argv[1]
 
-    parser = argparse.ArgumentParser(prog='overpass_roads')
+    parser = argparse.ArgumentParser(prog='las_road_segmenter: Segment LAS point clouds using road data from OSM.')
     parser.add_argument("-e", "--epsg", help="Projection of LAS file (default 4326)", type=int, default=4326)
     parser.add_argument("-r", "--roads_out", help="Output roads JSON file", type=str, default=None)
     parser.add_argument("-c", "--cache", help="OSM cache file", type=str, default=None)
@@ -265,7 +292,6 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out", help="Classified and decimated LAS output file (overwriting input as default)",
                         type=str,
                         default=filepath)
-
     parser.add_argument("-s", "--show_result",
                         help="Show resulting point cloud",
                         action='store_true')
@@ -273,7 +299,6 @@ if __name__ == "__main__":
     args = parser.parse_args(sys.argv[2:])
 
     # Reading LAS
-    print("Processing %s" % filepath)
     las_data_read = File(filepath, mode='r')
     las_header = las_data_read.header.copy()
     xyzc_points = np.transpose(np.array([las_data_read.x,
@@ -296,7 +321,7 @@ if __name__ == "__main__":
     save_las(xyzc_points, las_header, args.out)
 
     if args.show_result:
-        show_las(xyzc_points[:,0],
-                 xyzc_points[:,1],
-                 xyzc_points[:,2],
-                 xyzc_points[:,3])
+        show_las(xyzc_points[:, 0],
+                 xyzc_points[:, 1],
+                 xyzc_points[:, 2],
+                 xyzc_points[:, 3])

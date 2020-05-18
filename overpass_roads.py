@@ -173,7 +173,7 @@ def show_linestrings(roads):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(prog='overpass_roads')
+    parser = argparse.ArgumentParser(prog='overpass_roads: Get OSM road information from the Overpass API.')
     parser.add_argument("-minlat", "--min_latitude", help="Minimum Latitude", type=float)
     parser.add_argument("-minlon", "--min_longitude", help="Minimum Longitude", type=float)
     parser.add_argument("-maxlat", "--max_latitude", help="Maximum Latitude", type=float)

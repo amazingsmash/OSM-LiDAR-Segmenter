@@ -1,14 +1,12 @@
 import argparse
 import json
 import sys
-
 import overpy
 import time
-
 from pyproj import CRS, Transformer
 from shapely.geometry import LineString, MultiLineString, Point
-
 import json_utils
+import matplotlib.pyplot as plt
 
 
 class ObjectCache:
@@ -159,35 +157,47 @@ def get_roads(sector, cache=None, epsg_to=4326):
     data = [{"coords": list(l.coords),
              "tags": t,
              "estimated_width_meters": w} for l, t, w in zip(road_linestrings, road_tags, road_widths)]
-
     return data
+
+
+def show_linestrings(roads):
+    fig = plt.figure()
+    for r in roads:
+        lscoords = r["coords"]
+        x = [c[0] for c in lscoords]
+        y = [c[1] for c in lscoords]
+        plt.plot(x, y)
+
+    plt.show()
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog='overpass_roads')
-    parser.add_argument("-minlat", help="Minimum Latitude", type=float)
-    parser.add_argument("-minlon", help="Minimum Longitude", type=float)
-    parser.add_argument("-maxlat", help="Maximum Latitude", type=float)
-    parser.add_argument("-maxlon", help="Maximum Longitude", type=float)
-    parser.add_argument("-e", help="Output EPSG Projection", type=int, default=4326)
-    parser.add_argument("-o", help="Output JSON File", type=str, default=None)
-    parser.add_argument("-c", help="Cache File", type=str, default="")
+    parser.add_argument("-minlat", "--min_latitude", help="Minimum Latitude", type=float)
+    parser.add_argument("-minlon", "--min_longitude", help="Minimum Longitude", type=float)
+    parser.add_argument("-maxlat", "--max_latitude", help="Maximum Latitude", type=float)
+    parser.add_argument("-maxlon", "--max_longitude", help="Maximum Longitude", type=float)
+    parser.add_argument("-e", "--epsg", help="Output EPSG Projection", type=int, default=4326)
+    parser.add_argument("-o", "--out", help="Output JSON File", type=str, default=None)
+    parser.add_argument("-c", "--cache", help="Cache File", type=str, default="")
+    parser.add_argument("-s", "--show_results",
+                        help="Show resulting point cloud",
+                        action='store_true')
 
-    arg = parser.parse_args(sys.argv[1:])  # getting args
+    args = parser.parse_args(sys.argv[1:])  # getting args
+    sector = (args.min_latitude, args.min_longitude, args.max_latitude, args.max_longitude)
+    cache = None if args.cache == "" else ObjectCache(args.cache)
 
-    sector = (arg.minlat, arg.minlon, arg.maxlat, arg.maxlon)
-    cache = None if arg.c == "" else ObjectCache(arg.c)
-    proj = arg.e
+    osm_roads = get_roads(sector, cache, epsg_to=args.epsg)
 
-    roads = get_roads(sector, cache, epsg_to=proj)
+    if args.show_results:
+        show_linestrings(osm_roads)
 
-    if arg.o is None:
-        print(roads)
+    if args.out is None:
+        print(osm_roads)
     else:
-        json_utils.write_json(roads, arg.o)
-
-    print("done")
+        json_utils.write_json(osm_roads, args.out)
 
 
 

@@ -258,11 +258,11 @@ if __name__ == "__main__":
     filepath = sys.argv[1]
 
     parser = argparse.ArgumentParser(prog='overpass_roads')
-    parser.add_argument("-e", help="Projection of LAS file (default 4326)", type=int, default=4326)
-    parser.add_argument("-r", help="Output roads JSON file", type=str, default=None)
-    parser.add_argument("-c", help="OSM cache file", type=str, default=None)
-    parser.add_argument("-d", help="Take 1 every N points (default 1)", type=int, default=1)
-    parser.add_argument("-o", help="Classified and decimated LAS output file (overwriting input as default)",
+    parser.add_argument("-e", "--epsg", help="Projection of LAS file (default 4326)", type=int, default=4326)
+    parser.add_argument("-r", "--roads_out", help="Output roads JSON file", type=str, default=None)
+    parser.add_argument("-c", "--cache", help="OSM cache file", type=str, default=None)
+    parser.add_argument("-d", "--decimation_step", help="Take 1 every N points (default 1)", type=int, default=1)
+    parser.add_argument("-o", "--out", help="Classified and decimated LAS output file (overwriting input as default)",
                         type=str,
                         default=filepath)
 
@@ -282,44 +282,21 @@ if __name__ == "__main__":
                                          las_data_read.Classification.astype(float)]))
     las_data_read.close()
 
-    if args.d != 1:
-        xyzc_points = xyzc_points[::args.d, :]
-
-    #las_data = copy_decimated_writable(las_data_read, decimate_step=decimation)
+    if args.decimation_step != 1:
+        xyzc_points = xyzc_points[::args.decimation_step, :]
 
     road_mask, roads = get_road_points(xyzc=xyzc_points,
-                                       epsg=args.e,
-                                       cache=args.c)
+                                       epsg=args.epsg,
+                                       cache=args.cache)
     xyzc_points[:, 3] = road_mask
 
-    if args.r is not None:
-        json_utils.write_json(roads, args.r)
+    if args.roads_out is not None:
+        json_utils.write_json(roads, args.roads_out)
 
-    save_las(xyzc_points, las_header, args.o)
+    save_las(xyzc_points, las_header, args.out)
 
     if args.show_result:
         show_las(xyzc_points[:,0],
                  xyzc_points[:,1],
                  xyzc_points[:,2],
                  xyzc_points[:,3])
-
-    # Getting Sector
-    # sector = get_wgs84_sector(las_data, epsg_num=las_proj)
-    # print(sector)
-    # print(get_map_url(sector))
-    # sector = (-9.09333395170717, 13.28352294034062, -9.08682383512845, 13.306427631531223)
-
-    # cache = overpass_roads.ObjectCache()
-    # query_roads = overpass_roads.get_highway_query(sector)
-    # road_linestrings, road_tags, road_widths = overpass_roads.get_linestrings(query_roads, cache)
-
-    # road_linestrings = convert_multilines(road_linestrings, epsg_to=las_proj)
-    # show_linestrings(road_linestrings)
-
-    # road_mask = get_road_mask(road_linestrings, road_widths)
-
-    # road_mask = road_mask.astype(np.uint8)
-
-    # sio.savemat('roads_decimated.mat', {'mask': road_mask})
-    # mask = sio.loadmat('roads.mat')['mask']
-

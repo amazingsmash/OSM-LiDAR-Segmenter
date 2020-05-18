@@ -154,7 +154,7 @@ def convert_multilines(multilines, epsg_to=32733):
 def get_roads(sector, cache=None, epsg_to=4326):
     query_roads = get_highway_query(sector)
     road_linestrings, road_tags, road_widths = get_linestrings(query_roads, cache)
-    road_linestrings = convert_multilines(road_linestrings, epsg_to=proj)
+    road_linestrings = convert_multilines(road_linestrings, epsg_to=epsg_to)
 
     data = [{"coords": list(l.coords),
              "tags": t,
@@ -177,7 +177,6 @@ if __name__ == "__main__":
     arg = parser.parse_args(sys.argv[1:])  # getting args
 
     sector = (arg.minlat, arg.minlon, arg.maxlat, arg.maxlon)
-    print("Requesting sector " + sector)
     cache = None if arg.c == "" else ObjectCache(arg.c)
     proj = arg.e
 

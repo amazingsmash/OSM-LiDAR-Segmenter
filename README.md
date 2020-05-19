@@ -36,17 +36,10 @@ The tool also accepts a height threshold that dismisses points over an estimated
 
         optional arguments:
           -h, --help            show this help message and exit
-
           -e EPSG, --epsg EPSG  Projection of LAS file (default 4326)
-
-          -f FLOOR_THRESHOLD, --floor_threshold FLOOR_THRESHOLD Filter points above height (default 0.5). < 0 means no  filtering
-
+          -f FLOOR_THRESHOLD, --floor_threshold FLOOR_THRESHOLD Filter points above height (default 0.5). < 0 means no filtering
           -r ROADS_OUT, --roads_out ROADS_OUT Output roads JSON file
-
           -c CACHE, --cache CACHE OSM cache file
-
           -d DECIMATION_STEP, --decimation_step DECIMATION_STEP Take 1 every N points (default 1)
-
           -o OUT, --out OUT     Classified and decimated LAS output file (overwriting input as default)
-
           -s, --show_result     Show resulting point cloud

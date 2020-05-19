@@ -214,31 +214,36 @@ def get_map_url(sector):
 #
 #     return road_mask
 
-def get_floor_mask(xyzc, threshold=0.5):
-    minx = np.min(xyzc[:, 0])
-    maxx = np.max(xyzc[:, 0])
-    miny = np.min(xyzc[:, 1])
-    maxy = np.max(xyzc[:, 1])
+def normalize_array(x):
+    minx = np.min(x)
+    maxx = np.max(x)
+    q = (x - minx)
+    return q / (maxx - minx)
 
-    ix = (xyzc[:, 0] - minx) / (maxx - minx)
-    iy = (xyzc[:, 1] - miny) / (maxy - miny)
 
-    map_res = (100, 100)
-    ix = np.floor(ix * map_res[0])
-    iy = np.floor(iy * map_res[1])
-    indices = np.ravel_multi_index([ix, iy], map_res)
-    unique_indices = np.unique(indices)
+def get_floor_mask(xyzc, threshold=1.5):
 
-    hs = np.array(indices.shape)
-    for u in unique_indices:
-        ps = indices == u
-        hs[ps] = np.min(xyzc[ps, 2])
+    print("Computing terrain elevation")
+    map_res = (500, 500)
+    ix = normalize_array(xyzc[:, 0])
+    iy = normalize_array(xyzc[:, 1])
+
+    ix = np.floor(ix * (map_res[0]-1))
+    iy = np.floor(iy * (map_res[1]-1))
+
+    indices2d = np.array([ix, iy]).astype(int)
+    indices = np.ravel_multi_index(indices2d, map_res)
+    hs = np.zeros(np.max(indices)+1) + 999999
+
+    for height, index in zip(xyzc[:, 2], indices):
+        hs[index] = np.min([height, hs[index]])
 
     hs = hs + threshold
-    floor_points = xyzc[:, 3] > hs
+    hs = hs[indices]
+    floor_points = xyzc[:, 2] < hs
+
+    print("Terrain elevation finished")
     return floor_points
-
-
 
 
 def get_road_points(xyzc, epsg, cache=None):
@@ -286,6 +291,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog='las_road_segmenter: Segment LAS point clouds using road data from OSM.')
     parser.add_argument("-e", "--epsg", help="Projection of LAS file (default 4326)", type=int, default=4326)
+    parser.add_argument("-f", "--floor_threshold", help="Filter points above height (default 0.5)." +
+                                                        " < 0 means no filtering", type=float, default=0.5)
     parser.add_argument("-r", "--roads_out", help="Output roads JSON file", type=str, default=None)
     parser.add_argument("-c", "--cache", help="OSM cache file", type=str, default=None)
     parser.add_argument("-d", "--decimation_step", help="Take 1 every N points (default 1)", type=int, default=1)
@@ -310,15 +317,25 @@ if __name__ == "__main__":
     if args.decimation_step != 1:
         xyzc_points = xyzc_points[::args.decimation_step, :]
 
+    all_points = xyzc_points
+
+    if args.floor_threshold >= 0:
+        floor_mask = get_floor_mask(xyzc_points, threshold=args.floor_threshold)
+        xyzc_points = xyzc_points[floor_mask, :]
+
     road_mask, roads = get_road_points(xyzc=xyzc_points,
                                        epsg=args.epsg,
                                        cache=args.cache)
+
     xyzc_points[:, 3] = road_mask
+
+    if args.floor_threshold >= 0:
+        all_points[floor_mask, :] = xyzc_points
 
     if args.roads_out is not None:
         json_utils.write_json(roads, args.roads_out)
 
-    save_las(xyzc_points, las_header, args.out)
+    save_las(all_points, las_header, args.out)
 
     if args.show_result:
         show_las(xyzc_points[:, 0],

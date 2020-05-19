@@ -16,19 +16,12 @@ Based on the information metadata tags the application adds some estimation of t
 
         optional arguments:
           -h, --help            show this help message and exit
-
           -minlat MIN_LATITUDE, --min_latitude MIN_LATITUDE  Minimum Latitude
-
           -minlon MIN_LONGITUDE, --min_longitude MIN_LONGITUDE Minimum Longitude
-
           -maxlat MAX_LATITUDE, --max_latitude MAX_LATITUDE Maximum Latitude
-
           -maxlon MAX_LONGITUDE, --max_longitude MAX_LONGITUDE Maximum Longitude
-
           -e EPSG, --epsg EPSG  Output EPSG Projection
-
           -o OUT, --out OUT     Output JSON File
-
           -c CACHE, --cache CACHE  Cache File
           -s, --show_results    Show resulting point cloud
 

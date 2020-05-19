@@ -1,6 +1,8 @@
 # OSM-LiDAR-Segmenter
 
-LiDAR point cloud segmentation from Open Street Map road data.
+Open point-clouds and scans are a common source of geographical information. However, their segmentation remains an open problem as, commonly, there is insufficient ground-truth data to train ML techniques. These tools present in this project intend to exploit openly available data from OSM, to provide some initial data to bootstrap these learning process.
+
+In particular, the present version performs point cloud segmentation from Open Street Map road data for airborne LiDAR.
 
 The repository contains two Python tools:
 

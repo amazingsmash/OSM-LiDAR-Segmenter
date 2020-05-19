@@ -2,7 +2,7 @@
 
 Open point-clouds and scans are a common source of geographical information. However, their segmentation remains an open problem as, commonly, there is insufficient ground-truth data to train ML techniques. These tools present in this project intend to exploit openly available data from OSM, to provide some initial data to bootstrap these learning process.
 
-In particular, the present version performs point cloud segmentation from Open Street Map road data for airborne LiDAR.
+In particular, the present version performs point cloud segmentation from Open Street Map road data for airborne LiDAR. In order to efficiently classify the dataset on a point-by-point basis, it estimates the road width based on the OSM metadata and computes a Digital Elevation Model based on the input geometry.
 
 The repository contains two Python tools:
 

@@ -173,7 +173,8 @@ def show_linestrings(roads):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(prog='overpass_roads: Get OSM road information from the Overpass API.')
+    parser = argparse.ArgumentParser()
+    parser.add_argument("overpass_roads", help="Get OSM road information from the Overpass API.", action='store_true')
     parser.add_argument("-minlat", "--min_latitude", help="Minimum Latitude", type=float)
     parser.add_argument("-minlon", "--min_longitude", help="Minimum Longitude", type=float)
     parser.add_argument("-maxlat", "--max_latitude", help="Maximum Latitude", type=float)
@@ -185,7 +186,7 @@ if __name__ == "__main__":
                         help="Show resulting point cloud",
                         action='store_true')
 
-    args = parser.parse_args(sys.argv[1:])  # getting args
+    args = parser.parse_args()  # getting args
     sector = (args.min_latitude, args.min_longitude, args.max_latitude, args.max_longitude)
     cache = None if args.cache == "" else ObjectCache(args.cache)
 
